@@ -1,32 +1,25 @@
-
-import robin_stocks as rs
 import robin_stocks.robinhood as rh
-import pyotp
-from datetime import datetime
-import os
+from robin_data import get_leaps
+from utility import authenticate_robinhood
 
-totp = pyotp.TOTP(os.environ.get('ROBINHOOD_TOTP')).now()
-print("Current OTP:", totp)
-login = rh.login('kimardenmiller@gmail.com', os.environ.get('ROBINHOOD_PSWD'), mfa_code=totp)
+authenticate_robinhood()
 
-my_holdings = rh.build_holdings()
+# my_holdings = rh.build_holdings()
 
 chain = rh.options.get_chains('TSLA')
-
-last_contract = []
-
-for contract in chain['expiration_dates']:
-    date_time_str = datetime.strptime(contract, '%Y-%m-%d')
-    last_contract = date_time_str.strftime("%Y-%m-%d")
-    days_to_expire = (date_time_str - datetime.today()).days
-    if days_to_expire > 365:
-        print(date_time_str.strftime("%Y-%m-%d"), days_to_expire, 'days out')
+# underlying = rh.get_instruments_by_symbols('tsla')
+underlying = rh.get_quotes('tsla')
+print('Last Trade: ', underlying[0]['last_trade_price'])
+standard_deviation_1 = 'stdev_1'
+print('1 StDev', standard_deviation_1)
+last_contract = get_leaps(chain)
 
 # optionData = rh.find_options_by_expiration(['fb', 'aapl', 'tsla', 'nflx'],
 print(last_contract)
-optionData = rh.find_options_by_expiration(['fb'],
-                                           expirationDate=last_contract,
-                                           optionType='call')
+optionData = rh.find_options_by_expiration(['fb'], expirationDate=last_contract, optionType='call')
+
 for item in optionData:
-    print(' price -', item['strike_price'], ' exp - ', item['expiration_date'], ' symbol - ',
-          item['chain_symbol'], ' delta - ', item['delta'], ' theta - ', item['theta'])
+    if float(item['strike_price']) == 300:
+        print('300 found')
+    # print(' Strike', item['strike_price'], ' exp - ', item['expiration_date'], ' symbol - ',
+    #       item['chain_symbol'], ' delta - ', item['delta'], ' theta - ', item['theta'])
