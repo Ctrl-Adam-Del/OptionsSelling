@@ -1,6 +1,6 @@
 import robin_stocks.robinhood as rh
 import pandas as pd
-from robin_data import get_leaps
+from robin_data import filter_for_leaps
 from utility import authenticate_robinhood
 
 
@@ -22,7 +22,7 @@ underlying_standard_deviation = underlying_history['close_price'].astype('float'
 # print(underlying_history)
 print(f'{underlying_stock_symbol} Last: ${underlying_last:.2f} StdDev: {underlying_standard_deviation:.2f}')
 
-leaps = get_leaps(option_chains, 365)
+leaps = filter_for_leaps(option_chains, 365)
 
 for leap in leaps:
     option_data = pd.DataFrame.from_dict(rh.find_options_by_expiration(
