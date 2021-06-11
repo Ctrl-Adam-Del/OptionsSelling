@@ -3,6 +3,7 @@ import pandas as pd
 from robin_data import get_leaps
 from utility import authenticate_robinhood
 
+
 authenticate_robinhood()
 pd.set_option('display.max_columns', None, 'display.max_rows', None, 'display.width', 200)
 
@@ -22,13 +23,7 @@ underlying_standard_deviation = underlying_history['close_price'].astype('float'
 print(f'{underlying_stock_symbol} Last: ${underlying_last:.2f} StdDev: {underlying_standard_deviation:.2f}')
 
 leaps = get_leaps(option_chains, 365)
-# print(leaps)
-# for leap in leaps:
-# leap = leaps[0]
-# print(underlying_stock_symbol, leap['contract'])
-# print(rh.find_options_by_expiration(
-#     underlying_stock_symbol, expirationDate='2022-06-17', optionType='put'))
-# exit(0)
+
 for leap in leaps:
     option_data = pd.DataFrame.from_dict(rh.find_options_by_expiration(
         underlying_stock_symbol, expirationDate=leap['contract'], optionType='put'))
@@ -38,7 +33,9 @@ for leap in leaps:
     option_data['Ask'] = round(option_data['ask_price'].astype('float'), 2)
     option_data['OTM'] = underlying_last - option_data['Strike']
     option_data.sort_values('Strike', inplace=True)
+    option_data.rename(columns={'expiration_date': 'Expiration', 'open_interest': 'OI'}, inplace=True)
     # print(optionData.head())
 
-    strike_range = option_data[option_data.OTM.between(underlying_standard_deviation, underlying_standard_deviation * 2)]
+    strike_range = option_data[
+        option_data.OTM.between(underlying_standard_deviation, underlying_standard_deviation * 2)]
     print(strike_range[['expiration_date', 'Strike', 'OTM', 'open_interest', 'Bid', 'Ask']])
