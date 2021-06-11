@@ -1,29 +1,22 @@
 import robin_stocks.robinhood as rh
-import pandas as pd
-from robin_data import get_leaps
+from robin_data import underlying_historical
 from utility import authenticate_robinhood
 
 
-def run(scan):
-    print(scan)
+def run(scan, pd):
     authenticate_robinhood()
-    pd.set_option('display.max_columns', None, 'display.max_rows', None, 'display.width', 200)
 
     underlying_stock_symbol = 'TSLA'
     underlying = rh.get_quotes(underlying_stock_symbol)
-    underlying_last = round(float(underlying[0]['last_trade_price']), 2)
-    option_chains = rh.options.get_chains(underlying_stock_symbol)  # todo all puts?
+    underlying_last = float(underlying[0]['last_trade_price'])
 
     # my_holdings = rh.build_holdings()
     # underlying = rh.get_instruments_by_symbols('tsla')
 
-    underlying_history = pd.DataFrame.from_dict(rh.get_stock_historicals(underlying_stock_symbol,
-                                                                         interval='day', span='year'))
-    underlying_standard_deviation = underlying_history['close_price'].astype('float').std()
+    underlying_average_std_dev = underlying_historical(pd, scan, underlying_last, underlying_stock_symbol)
+    print(f'{underlying_stock_symbol} Last: ${underlying_last:.2f} Average StdDev: {underlying_average_std_dev:.2f}')
 
-    # print(underlying_history)
-    print(f'{underlying_stock_symbol} Last: ${underlying_last:.2f} StdDev: {underlying_standard_deviation:.2f}')
-
+    option_chains = rh.options.get_chains(underlying_stock_symbol)  # todo force to puts?
     # leaps = get_leaps(option_chains, scan.leaps_min_days)
     leaps = [{'contract': '2023-06-16', 'days_to_expire': '734'}]
 
@@ -40,5 +33,7 @@ def run(scan):
         # print(optionData.head())
 
         strike_range = option_data[
-            option_data.OTM.between(underlying_standard_deviation, underlying_standard_deviation * 2)]
+            option_data.OTM.between(underlying_average_std_dev, underlying_average_std_dev * 2)]
         print(strike_range[['Expiration', 'Strike', 'OTM', 'OI', 'Bid', 'Ask']])
+
+
