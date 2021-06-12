@@ -30,7 +30,7 @@ def underlying_historical(pd, scan, underlying_last, underlying_stock_symbol):
 def filter_for_leaps(pd, chain, min_to_expire):
     old_contracts = []
     # print(chain)
-    contracts = pd.DataFrame.from_dict({'Expires': pd.to_datetime(chain['expiration_dates'])})    # todo convert to dataframe return
+    contracts = pd.DataFrame.from_dict({'Expires': pd.to_datetime(chain['expiration_dates'])})
     contracts['Days'] = contracts['Expires'] - datetime.today()
     # print(pd.Timedelta(days=min_to_expire))
     leaps = contracts[contracts.Expires > datetime.now() + pd.Timedelta(days=min_to_expire)]
@@ -53,7 +53,6 @@ def get_put_leaps(pd, scan, underlying_average_std_dev, underlying, underlying_s
 
     # for leap in leaps:
     for index, leap in leaps.iterrows():
-        print(leap['Expires'].strftime('%Y-%m-%d'))
         option_data = pd.DataFrame.from_dict(rh.find_options_by_expiration(
             underlying_stock_symbol, expirationDate=leap['Expires'].strftime('%Y-%m-%d'), optionType='put'))
         option_data['Days'] = leap['Days'].days
@@ -73,5 +72,6 @@ def get_put_leaps(pd, scan, underlying_average_std_dev, underlying, underlying_s
         strike_range = option_data[
             option_data.OTM.between(underlying_average_std_dev, underlying_average_std_dev * 2)]
         # print(strike_range.style.format({'Mid/Strike': '{:.2%}'}).render())
+        print('Contract: ', leap['Expires'].strftime('%Y-%m-%d'))
         print(strike_range[['Expiration', 'Days', 'Strike', 'OTM', 'OI', 'Bid', 'Ask', 'Mid', 'Mid/Strike Return',
                             'Annualized']])
