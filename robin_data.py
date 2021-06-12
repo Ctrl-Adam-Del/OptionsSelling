@@ -27,30 +27,36 @@ def underlying_historical(pd, scan, underlying_last, underlying_stock_symbol):
     return underlying_average_std_dev
 
 
-def filter_for_leaps(chain, min_to_expire):
-    contracts = []
-    print(chain)
-    # chain[chain.expiration_dates ]    # todo convert to dataframe return
-    for contract in chain['expiration_dates']:
-        date_time_str = datetime.strptime(contract, '%Y-%m-%d')
-        days_to_expire = (date_time_str - datetime.today()).days
-        if days_to_expire > min_to_expire:
-            contracts.append({'contract': date_time_str.strftime("%Y-%m-%d"), 'days_to_expire': days_to_expire})
-            print(date_time_str.strftime("%Y-%m-%d"), days_to_expire, 'days out')
-    return contracts
+def filter_for_leaps(pd, chain, min_to_expire):
+    old_contracts = []
+    # print(chain)
+    contracts = pd.DataFrame.from_dict({'Expires': pd.to_datetime(chain['expiration_dates'])})    # todo convert to dataframe return
+    contracts['Days'] = contracts['Expires'] - datetime.today()
+    # print(pd.Timedelta(days=min_to_expire))
+    leaps = contracts[contracts.Expires > datetime.now() + pd.Timedelta(days=min_to_expire)]
+    # print(contracts)
+    # for contract in chain['expiration_dates']:
+    #     date_time_str = datetime.strptime(contract, '%Y-%m-%d')
+    #     days_to_expire = (date_time_str - datetime.today()).days
+    #     if days_to_expire > min_to_expire:
+    #         old_contracts.append({'contract': date_time_str.strftime("%Y-%m-%d"), 'days_to_expire': days_to_expire})
+    #         print(date_time_str.strftime("%Y-%m-%d"), days_to_expire, 'days out')
+
+    return leaps
 
 
 def get_put_leaps(pd, scan, underlying_average_std_dev, underlying, underlying_stock_symbol):
     option_chains = rh.options.get_chains(underlying_stock_symbol)
-    # leaps = get_leaps(option_chains, scan.leaps_min_days)         # Manually picking contract for quicker testing
-    leaps = pd.DataFrame.from_dict([{'contract': '2023-06-16', 'days_to_expire': 734}])
+    # print(option_chains)
+    leaps = filter_for_leaps(pd, option_chains, scan.leaps_min_days)  # Manually picking contract for quicker testing
+    # leaps = pd.DataFrame.from_dict([{'contract': '2023-06-16', 'days_to_expire': 734}])
 
     # for leap in leaps:
     for index, leap in leaps.iterrows():
+        print(leap['Expires'].strftime('%Y-%m-%d'))
         option_data = pd.DataFrame.from_dict(rh.find_options_by_expiration(
-            underlying_stock_symbol, expirationDate=leap['contract'], optionType='put'))
-        print(leap['contract'])
-        option_data['Days'] = leap['days_to_expire']
+            underlying_stock_symbol, expirationDate=leap['Expires'].strftime('%Y-%m-%d'), optionType='put'))
+        option_data['Days'] = leap['Days'].days
         option_data['Strike'] = round(option_data.strike_price.astype('float')).astype('int32')
         option_data['Bid'] = round(option_data['bid_price'].astype('float'), 2)
         option_data['Ask'] = round(option_data['ask_price'].astype('float'), 2)
