@@ -41,7 +41,6 @@ def filter_for_leaps(chain, min_to_expire):
 
 
 def get_put_leaps(pd, scan, underlying_average_std_dev, underlying, underlying_stock_symbol):
-
     option_chains = rh.options.get_chains(underlying_stock_symbol)
     # leaps = get_leaps(option_chains, scan.leaps_min_days)         # Manually picking contract for quicker testing
     leaps = pd.DataFrame.from_dict([{'contract': '2023-06-16', 'days_to_expire': 734}])
@@ -51,14 +50,15 @@ def get_put_leaps(pd, scan, underlying_average_std_dev, underlying, underlying_s
         option_data = pd.DataFrame.from_dict(rh.find_options_by_expiration(
             underlying_stock_symbol, expirationDate=leap['contract'], optionType='put'))
         print(leap['contract'])
+        option_data['Days'] = leap['days_to_expire']
         option_data['Strike'] = round(option_data.strike_price.astype('float')).astype('int32')
         option_data['Bid'] = round(option_data['bid_price'].astype('float'), 2)
         option_data['Ask'] = round(option_data['ask_price'].astype('float'), 2)
         option_data['Mid'] = round(((option_data['Ask'] - option_data['Bid']) *
                                     scan.options_bid_ask_midpoint) + option_data['Ask'], 2)
-        option_data['Mid/Strike'] = option_data['Mid'] / option_data['Strike']
-        option_data['Annualized Return'] = ((scan.annualized_return_days / leap['days_to_expire']) *
-                                            option_data['Mid/Strike'])
+        option_data['Mid/Strike Return'] = round((option_data['Mid'] / option_data['Strike']) * 100, 2)
+        option_data['Annualized'] = round((scan.annualized_return_days / option_data['Days']) *
+                                          option_data['Mid/Strike Return'], 2)
         option_data['OTM'] = underlying['Last'][0] - option_data['Strike']
         option_data.sort_values('Strike', inplace=True)
         option_data.rename(columns={'expiration_date': 'Expiration', 'open_interest': 'OI'}, inplace=True)
@@ -66,5 +66,6 @@ def get_put_leaps(pd, scan, underlying_average_std_dev, underlying, underlying_s
 
         strike_range = option_data[
             option_data.OTM.between(underlying_average_std_dev, underlying_average_std_dev * 2)]
-        print(strike_range[['Expiration', 'Strike', 'OTM', 'OI', 'Bid', 'Ask', 'Mid', 'Mid/Strike',
-                            'Annualized Return']])
+        # print(strike_range.style.format({'Mid/Strike': '{:.2%}'}).render())
+        print(strike_range[['Expiration', 'Days', 'Strike', 'OTM', 'OI', 'Bid', 'Ask', 'Mid', 'Mid/Strike Return',
+                            'Annualized']])
