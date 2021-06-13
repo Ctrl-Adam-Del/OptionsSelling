@@ -60,7 +60,8 @@ def get_put_leaps(scan, underlying):
     for index, leap in leaps.iterrows():
         option_data = scan.pd.DataFrame.from_dict(rh.find_options_by_expiration(
             underlying[1]['symbol'], expirationDate=leap['Expires'].strftime('%Y-%m-%d'), optionType='put'))
-        option_data['Symbol'] = underlying[1]['symbol']
+        option_data['Sym'] = underlying[1]['symbol']
+        option_data['Last'] = underlying[1]['Last']
         option_data['StdDevAvg'] = underlying[1]['StdDevAvg']
         option_data['Days'] = leap['Days'].days
         option_data['Strike'] = option_data.strike_price.apply(scan.pd.to_numeric)
@@ -69,9 +70,9 @@ def get_put_leaps(scan, underlying):
         option_data['Mid'] = round(((option_data['Ask'] - option_data['Bid']) *
                                     scan.options_bid_ask_midpoint) + option_data['Ask'], 2)
         option_data['Return'] = round((option_data['Mid'] / option_data['Strike']) * 100, 2)
-        option_data['Annual'] = round((scan.annualized_return_days / option_data['Days']) *
-                                          option_data['Return'], 2)
+        option_data['Annual'] = round((scan.annualized_return_days / option_data['Days']) * option_data['Return'], 2)
         option_data['OTM'] = underlying[1]['Last'] - option_data['Strike']
+        option_data['COP'] = round(option_data['chance_of_profit_long'].apply(scan.pd.to_numeric) * 100, 2)
         option_data.sort_values('Strike', inplace=True)
         option_data.rename(columns={'expiration_date': 'Expiration', 'open_interest': 'OI'}, inplace=True)
         # print(option_data.head())
@@ -80,5 +81,5 @@ def get_put_leaps(scan, underlying):
             option_data.OTM.between(underlying[1]['StdDevAvg'], underlying[1]['StdDevAvg'] * 2)]
         # print(strike_range.style.format({'Mid/Strike': '{:.2%}'}).render())
         print('\nContract: ', leap['Expires'].strftime('%Y-%m-%d'))
-        print(strike_range[['Symbol', 'StdDevAvg', 'Expiration', 'Days', 'Strike', 'OTM', 'OI', 'Bid', 'Ask', 'Mid',
-                            'Return', 'Annual']])
+        print(strike_range[['Sym', 'Last', 'StdDevAvg', 'Expiration', 'Days', 'Strike', 'OTM', 'OI', 'Bid', 'Ask',
+                            'Mid', 'Return', 'Annual', 'COP']])
