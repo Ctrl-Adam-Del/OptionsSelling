@@ -2,7 +2,7 @@ from robin_data import underlying_std_dev, get_put_leaps, get_underlying_stocks
 from utility import authenticate_robinhood
 
 
-def run(scan, pd):
+def run(scan):
     authenticate_robinhood()
 
     underlying_stock_quotes = get_underlying_stocks(scan)

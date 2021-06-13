@@ -11,5 +11,5 @@ if __name__ == '__main__':
     scoring = ScoringDailyScan()
     pd.set_option('display.max_columns', None, 'display.max_rows', None, 'display.width', 200)
 
-    run(scoring, pd)
+    run(scoring)
 
